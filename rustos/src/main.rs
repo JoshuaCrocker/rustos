@@ -11,6 +11,17 @@
 // own start method for the freestanding executable.
 #![no_main]
 
+// While the majority of the built-in functions, which Rust assumes are 
+// available on all systems, are provided by the 'compiler_builtins' crate, 
+// there are some which are not enabled by default as they are normally provided
+// by the C library on the system (memset, memcpy and memcmp). At present there
+// is no way to enable the 'compiler_builtins' impementations of these methods,
+// so the workout we have is to include rlibc as a dependency.
+// ---
+// Since we aren't directly using the functions from rlibc we need to instruct
+// the Rust compiler to link the crate.
+extern crate rlibc;
+
 use core::panic::PanicInfo;
 
 // As we are operating in a no_std environment we need to define our own
@@ -32,6 +43,8 @@ fn panic(_info: &PanicInfo) -> ! {
     loop {}
 }
 
+static HELLO: &[u8] = b"Hello World!";
+
 // We no longer need the main method, as it was the underlying Rust runtime
 // which called it. Instead we define the _start method, which overwrites the
 // standard entry point.
@@ -50,6 +63,37 @@ pub extern "C" fn _start() -> ! {
     // or bootloader. Instead of returning this method would, within the context
     // of producing an OS, invoke the exit system call, or shut down the
     // machine.
+    // --- 
+
+    // At this stage in development we will use the VGA text buffer to print
+    // text to the screen. This typically consists of an area of 25 lines, each
+    // 80 character cells long.
+    // ---
+
+    // We will produce a driver for the VGA buffer soon, but for now we just
+    // need to know that the buffer is located at the address 0xb8000, and each
+    // character cells consists of an ASCII byte and a colour byte.
+
+    // Set up the raw pointer to the VGA buffer space.
+    let vga_buffer = 0xb8000 as *mut u8;
+
+    // Iterate through the HELLO byte string...
+    for (i, &byte) in HELLO.iter().enumerate() {
+        // The code we are executing is unsafe as the Rust compiler is unable to
+        // prove that we are pointing to valid memory space. The point of the
+        // unsafe block is to tell the Rust compiler that we are certain we want
+        // to run these operations.
+        // ---
+        // This isn't really the way we want to do things; we want to minimise
+        // the use of 'unsafe' as much as possible. A much better way to do this
+        // is to encapsulate the the unsafe code, and ensure that it is
+        // impossible to do anything wrong from the outside.
+        unsafe {
+            *vga_buffer.offset(i as isize * 2) = byte;
+            *vga_buffer.offset(i as isize * 2 + 1) = 0xb;
+        }
+    }
+
     loop {}
 }
 
