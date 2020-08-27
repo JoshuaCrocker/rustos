@@ -24,6 +24,9 @@ extern crate rlibc;
 
 use core::panic::PanicInfo;
 
+// Import the VGA buffer module.
+mod vga_buffer;
+
 // As we are operating in a no_std environment we need to define our own
 // panic_handler method. This is usually implemented by the standard library.
 // ---
@@ -38,12 +41,10 @@ fn panic(_info: &PanicInfo) -> ! {
     // within the code where the panic occurred, as well as the optional panic
     // message.
 
-    // For now there's not much we can do in this function, so we'll loop
-    // indefinitely.
+    // Now we can print panic info to the VGA Buffer.
+    println!("{}", _info);
     loop {}
 }
-
-static HELLO: &[u8] = b"Hello World!";
 
 // We no longer need the main method, as it was the underlying Rust runtime
 // which called it. Instead we define the _start method, which overwrites the
@@ -74,25 +75,7 @@ pub extern "C" fn _start() -> ! {
     // need to know that the buffer is located at the address 0xb8000, and each
     // character cells consists of an ASCII byte and a colour byte.
 
-    // Set up the raw pointer to the VGA buffer space.
-    let vga_buffer = 0xb8000 as *mut u8;
-
-    // Iterate through the HELLO byte string...
-    for (i, &byte) in HELLO.iter().enumerate() {
-        // The code we are executing is unsafe as the Rust compiler is unable to
-        // prove that we are pointing to valid memory space. The point of the
-        // unsafe block is to tell the Rust compiler that we are certain we want
-        // to run these operations.
-        // ---
-        // This isn't really the way we want to do things; we want to minimise
-        // the use of 'unsafe' as much as possible. A much better way to do this
-        // is to encapsulate the the unsafe code, and ensure that it is
-        // impossible to do anything wrong from the outside.
-        unsafe {
-            *vga_buffer.offset(i as isize * 2) = byte;
-            *vga_buffer.offset(i as isize * 2 + 1) = 0xb;
-        }
-    }
+    println!("Hello World{}", "!");
 
     loop {}
 }
