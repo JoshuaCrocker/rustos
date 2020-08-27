@@ -224,3 +224,50 @@ pub fn _print(args: fmt::Arguments) {
     use core::fmt::Write;
     WRITER.lock().write_fmt(args).unwrap();
 }
+
+
+// TESTING
+
+// Simple test to ensure that the println (and consequently the print) macro
+// have been set up and are functioning correctly. If we get through this
+// without panicking, then the test passes.
+#[test_case]
+fn test_println_simple() {
+    println!("test_println_simple output");
+}
+
+// Test printing many lines to ensure that no panic occurs when printing over
+// the maximum number of rows available within the buffer. If we get through 
+// this without panicking, then the test passes.
+#[test_case]
+fn test_println_many() {
+    for _ in 0..200 {
+        println!("test_println_many output");
+    }
+}
+
+// Test that the text output to the buffer is the same which is input into the
+// buffer.
+#[test_case]
+fn test_println_output() {
+    // Define and print a test string
+    let s = "Test string";
+    println!("{}", s);
+
+    // Iterate over the test string
+    for (i, c) in s.chars().enumerate() {
+        // and retrieve the relevant character within the VGA Buffer
+        // N.b. as we called the println macro, the text will be on the second
+        // line, not the bottom, hence BUFFER_HEIGHT - 2.
+        let screen_char = 
+            WRITER.lock().buffer.chars[BUFFER_HEIGHT - 2][i].read();
+
+        // Ensure the characters are the same.
+        assert_eq!(char::from(screen_char.ascii_character), c);
+    }
+}
+
+// TODO test printing long lines (shouldn't panic)
+// TODO test line wrapping
+// TODO test non-printable character handling
+// TODO test non-unicode character handling

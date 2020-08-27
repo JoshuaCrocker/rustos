@@ -11,21 +11,12 @@
 // own start method for the freestanding executable.
 #![no_main]
 
-// While the majority of the built-in functions, which Rust assumes are 
-// available on all systems, are provided by the 'compiler_builtins' crate, 
-// there are some which are not enabled by default as they are normally provided
-// by the C library on the system (memset, memcpy and memcmp). At present there
-// is no way to enable the 'compiler_builtins' impementations of these methods,
-// so the workout we have is to include rlibc as a dependency.
-// ---
-// Since we aren't directly using the functions from rlibc we need to instruct
-// the Rust compiler to link the crate.
-extern crate rlibc;
+#![feature(custom_test_frameworks)]
+#![test_runner(rustos::test_runner)]
+#![reexport_test_harness_main = "test_main"]
 
 use core::panic::PanicInfo;
-
-// Import the VGA buffer module.
-mod vga_buffer;
+use rustos::println;
 
 // As we are operating in a no_std environment we need to define our own
 // panic_handler method. This is usually implemented by the standard library.
@@ -35,6 +26,7 @@ mod vga_buffer;
 // mark in the return type field.
 
 // TODO what is a diverging function?
+#[cfg(not(test))] // Don't enable this panic handler in test environments
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
     // The PanicInfo parameter contains information relating to the position
@@ -44,6 +36,12 @@ fn panic(_info: &PanicInfo) -> ! {
     // Now we can print panic info to the VGA Buffer.
     println!("{}", _info);
     loop {}
+}
+
+#[cfg(test)]
+#[panic_handler]
+fn panic(info: &PanicInfo) -> ! {
+    rustos::test_panic_handler(info)
 }
 
 // We no longer need the main method, as it was the underlying Rust runtime
@@ -77,6 +75,14 @@ pub extern "C" fn _start() -> ! {
 
     println!("Hello World{}", "!");
 
+    // Within the test environment, we want to call the main test method.
+    #[cfg(test)]
+    test_main();
+
     loop {}
 }
 
+// #[test_case]
+// fn trivial_assertion() {
+//     assert_eq!(1, 1);
+// }
