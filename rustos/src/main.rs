@@ -62,22 +62,20 @@ pub extern "C" fn _start() -> ! {
     // or bootloader. Instead of returning this method would, within the context
     // of producing an OS, invoke the exit system call, or shut down the
     // machine.
-    // --- 
-
-    // At this stage in development we will use the VGA text buffer to print
-    // text to the screen. This typically consists of an area of 25 lines, each
-    // 80 character cells long.
-    // ---
-
-    // We will produce a driver for the VGA buffer soon, but for now we just
-    // need to know that the buffer is located at the address 0xb8000, and each
-    // character cells consists of an ASCII byte and a colour byte.
 
     println!("Hello World{}", "!");
+
+    // Initialise the common modules.
+    rustos::init();
+
+    // invoke a breakpoint exception
+    x86_64::instructions::interrupts::int3();
 
     // Within the test environment, we want to call the main test method.
     #[cfg(test)]
     test_main();
+
+    println!("It did not crash!");
 
     loop {}
 }

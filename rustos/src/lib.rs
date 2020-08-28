@@ -14,6 +14,9 @@
 // tests.
 #![feature(custom_test_frameworks)]
 
+//
+#![feature(abi_x86_interrupt)]
+
 // Point to the custom test runner method.
 #![test_runner(crate::test_runner)]
 
@@ -38,6 +41,7 @@ use core::panic::PanicInfo;
 
 pub mod serial;
 pub mod vga_buffer;
+pub mod interrupts;
 
 // Create a new trait 'Testable' which enables us to automatically print out the
 // names of the test methods prior to execution, as well as the '[ok]' status
@@ -104,10 +108,17 @@ pub fn test_panic_handler(info: &PanicInfo) -> ! {
     loop {}
 }
 
+// General init method to initialise any modules which we have imported. In this
+// instance the only thing we're setting up is the Interrupt Descriptor Table.
+pub fn init() {
+    interrupts::init_idt();
+}
+
 // 'cargo test' entrypoint
 #[cfg(test)]
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
+    init();
     test_main();
     loop {}
 }
