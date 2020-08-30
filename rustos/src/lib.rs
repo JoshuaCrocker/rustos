@@ -42,6 +42,7 @@ use core::panic::PanicInfo;
 pub mod serial;
 pub mod vga_buffer;
 pub mod interrupts;
+pub mod gdt;
 
 // Create a new trait 'Testable' which enables us to automatically print out the
 // names of the test methods prior to execution, as well as the '[ok]' status
@@ -111,6 +112,7 @@ pub fn test_panic_handler(info: &PanicInfo) -> ! {
 // General init method to initialise any modules which we have imported. In this
 // instance the only thing we're setting up is the Interrupt Descriptor Table.
 pub fn init() {
+    gdt::init();
     interrupts::init_idt();
 }
 
